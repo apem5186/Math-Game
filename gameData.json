@@ -1,0 +1,13 @@
+{
+  "user": {
+    "userId": "1",
+    "userName": "hi",
+    "userPass": "1234"
+  },
+
+  "userPoint": {
+    "userId": "1",
+    "userName": "1234",
+    "userPoint": [1, 0]
+  }
+}
