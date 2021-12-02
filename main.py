@@ -2,6 +2,7 @@ import pygame
 import operator
 import random
 import game_DB
+import json
 
 class Game():       # 난수 생성 클래스
     def random_calc(self, difficulty):
@@ -138,6 +139,7 @@ questions = [quest]
 answer = [answer]
 current_question = 0 # 문제 번호(questions의 리스트 방식을 없앤다면 없어도 되는 기능)
 lives = 3   # 목숨
+login_id = "" # login시 id
 
 # pygame.init()   # pygame 초기화
 window = pygame.display.set_mode((720, 720))    # 720, 720 사이즈
@@ -193,6 +195,7 @@ group_text = pygame.sprite.Group(text_input_box)
 
 pygame.display.set_caption('Math Game')     # 제목
 
+score_record = False
 game_over_display = False   # game over 화면
 ##############################################
 # main loop
@@ -258,9 +261,9 @@ while run:
             for event in event_list:
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     if login_rect.collidepoint(event.pos):
-                        id = input_box1.text
+                        login_id = input_box1.text
                         passWord = input_box2.text
-                        if game_DB.id_check(id):
+                        if game_DB.id_check(login_id):
                             print("good!")
                             id_checked = True
                             if game_DB.pass_check(passWord):
@@ -421,22 +424,40 @@ while run:
             # Game Over
             #########################################
             elif lives == 0:
+                if score_record == False:
+                    game_DB.insert_point(login_id, score)
+                    score_record = True
                 window.fill(0)  # 화면 초기화(BLACK)
                 game_over_display = True
                 if game_over_display == True:
                     game_over_surf = font100.render("Game Over", True, (255, 255, 255)) 
                     window.blit(game_over_surf, game_over_surf.get_rect(centerx = 360, centery = 200))  # Game Over text를 띄움
-                    restart_surf = font50.render("Restart : Backspace", True, (255, 255, 255))
-                    window.blit(restart_surf, restart_surf.get_rect(centerx = 360, centery = 360))      # Restart text를 띄움
+                    restart_rect = pygame.Rect(140, 460, 140, 50)
+                    pygame.draw.rect(window, BLACK, restart_rect)   # restart 박스를 띄움
+                    text_restart = font50.render("RESTART", True, WHITE)
+                    window.blit(text_restart, [147, 460])
+                    quit_rect = pygame.Rect(470, 460, 140, 50)
+                    pygame.draw.rect(window, BLACK, quit_rect)  # quit 박스를 띄움
+                    text_quit = font50.render("QUIT", True, WHITE)
+                    window.blit(text_quit, [487, 460])
                     if event in event_list:
-                        if event.type == pygame.KEYDOWN:
-                            if event.key == pygame.K_BACKSPACE: # Backspace를 눌렀을 시 초기화
+                        if event.type == pygame.MOUSEBUTTONDOWN:
+                            if restart_rect.collidepoint(event.pos): # Backspace를 눌렀을 시 초기화
                                 game_over_display = False       
                                 lives += 3
                                 score = 0
                                 difficulty = 10
                                 Hp_pos_x = 200
+                                score_record = False
+                                game_DB.get_point(login_id)
                                 text_input_box.request()
+                            elif quit_rect.collidepoint(event.pos):
+                                game_run = False  # 게임 동작 여부
+                                login_run = False
+                                join_run = False
+                                intro_run = False
+                                run = False
+
 
             pygame.display.flip()   # 화면을 계속 업데이트 함
 game_DB.con().close
