@@ -8,6 +8,10 @@ import matplotlib
 matplotlib.use("Agg")
 
 import matplotlib.backends.backend_agg as agg
+
+import matplotlib.pyplot as plt
+
+
 def con():
     conn = pymysql.connect(
         host="127.0.0.1",
@@ -19,6 +23,19 @@ def con():
         autocommit=True
     )
     return conn
+# def show_record():
+#     fig = plt.figure(figsize=[4, 4], # Inches
+#                     dpi=150,        # 100 dots per inch, so the resulting buffer is 400x400 pixels
+#                     )
+
+#     canvas = agg.FigureCanvasAgg(fig)
+#     canvas.draw()
+#     renderer = canvas.get_renderer()
+#     raw_data = renderer.tostring_rgb()
+#     size = canvas.get_width_height()
+#     return raw_data, size
+
+    
 
 def id_check(id):
         with con().cursor() as curs:
@@ -39,8 +56,8 @@ def join_id_check(id, passWord):
             curs.execute(sql, (id, passWord))
             sql = "insert into userpoint(userName) values(%s)"
             curs.execute(sql, id)
-            sql = """update userpoint set point = '{"points": []}'"""
-            curs.execute(sql)
+            sql = """update userpoint set point = '{"points": []}' where userName = %s"""
+            curs.execute(sql, id)
             print(id, passWord)
             print("success")
     except Exception as e:
@@ -68,10 +85,41 @@ def get_point(id):
             return json_data
     except Exception as e:
         print(e)
-n = len(get_point("hi"))
-nn = range(1, n+1)
-print(nn)
-print(n)
-get_point("hi")
-plt.plot(nn, get_point("hi"))
-plt.show()
+
+def get_total():
+    try:
+        with con().cursor() as curs:
+            sql = """select total from userpoint"""
+            curs.execute(sql)
+            result = curs.fetchall()
+            return result
+    except Exception as e:
+        print(e)
+
+def get_name(total):
+    try:
+        with con().cursor() as curs:
+            sql = """select userName from userpoint where total = %s"""
+            curs.execute(sql, (total))
+            result = curs.fetchone()
+            return result
+    except Exception as e:
+        print(e)
+
+def insert_total(score, id):
+    try:
+        with con().cursor() as curs:
+            sql = """update userpoint set total = %s where userName = %s"""
+            curs.execute(sql, (score, id))
+    except Exception as e:
+        print(e)
+point = get_total()
+points = []
+name = []
+for i in point:
+    points += list(i)
+    name += list(get_name(i))
+
+print(get_name(35)[0])
+print(points)
+print(name)

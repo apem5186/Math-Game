@@ -1,8 +1,17 @@
 import pygame
 import operator
 import random
+
+from pygame.constants import DOUBLEBUF
+from pymysql import NULL
 import game_DB
 import json
+import matplotlib
+matplotlib.use("Agg")
+
+import matplotlib.backends.backend_agg as agg
+
+import matplotlib.pyplot as plt
 
 class Game():       # 난수 생성 클래스
     def random_calc(self, difficulty):
@@ -142,7 +151,7 @@ lives = 3   # 목숨
 login_id = "" # login시 id
 
 # pygame.init()   # pygame 초기화
-window = pygame.display.set_mode((720, 720))    # 720, 720 사이즈
+window = pygame.display.set_mode((720, 720), DOUBLEBUF)    # 720, 720 사이즈
 clock = pygame.time.Clock()     # fps
 font100 = pygame.font.SysFont(None, 100)    # 글자 font100
 font50 = pygame.font.SysFont(None, 50)      # 글자 font50
@@ -183,12 +192,29 @@ attack_active = False
 attack_speed = 15   # 공격이 나가는 속도
 attack_pos_x = 120  # 공격이 처음 생성되는 좌표 값
 attack_pos_y = 500
+##########################################################
+#   차트
+##########################################################
+# size = game_DB.canvas.get_width_height()
+fig = plt.figure(figsize=[4, 4], # Inches
+                dpi=150,        # 100 dots per inch, so the resulting buffer is 400x400 pixels
+                )
+ax = fig.gca()
+canvas = agg.FigureCanvasAgg(fig)
+canvas.draw()
+renderer = canvas.get_renderer()
+raw_data = renderer.tostring_rgb()
+size = canvas.get_width_height()
 
+##########################################################
+#   RGB값
+##########################################################
 BLACK= ( 0,  0,  0)
 WHITE= (255,255,255)
 BLUE = ( 0,  0,255)
 GREEN= ( 0,255,  0)
 RED  = (255,  0,  0)
+TRANSPARENCY = (0, 0, 0, 0)
 
 text_input_box = TextInputBox(20, 250, 460, font100)
 group_text = pygame.sprite.Group(text_input_box)
@@ -204,6 +230,8 @@ intro_run = True
 login_run = False
 join_run = False
 game_run = False  # 게임 동작 여부
+score_display = False
+rank_display = False
 run = True
 while run:
     ###########################################
@@ -253,6 +281,10 @@ while run:
             clock.tick(60)
             window.blit(background, (0, 0))
             pygame.draw.rect(window, BLACK, login_rect)
+            back_rect = pygame.Rect(21, 11, 140, 50)
+            pygame.draw.rect(window, BLACK, back_rect, 2)  # back 박스를 띄움
+            back_text = font50.render("BACK", True, BLACK)
+            window.blit(back_text, [42, 20])
             event_list = pygame.event.get()     # 마우스 클릭을 했더나 키보드를 누른다거나 하는 것들
             for box in input_boxes:
                 box.handle_event(event_list)
@@ -270,14 +302,18 @@ while run:
                                 print("good!!!!!")
                                 pass_checked = True
                                 login_run = False
+                                game_run = True
+                                start_ticks = pygame.time.get_ticks()
                             else:
                                 pass_checked = False
                                 print("PASSWORD ISN'T CORRECT")
                         else:
                             id_checked = False
                             print("ID ISN'T CORRECT")
-                        game_run = True
                         print(input_box1.text)
+                    elif back_rect.collidepoint(event.pos):
+                        login_run = False
+                        intro_run = True
                 for box in input_boxes:
                     box.update
                 if event.type == pygame.QUIT:   # 위쪽 상단에 x 버튼 나가면 종료
@@ -310,10 +346,16 @@ while run:
         join_rect = pygame.Rect(290, 540, 140, 50)
         text_id_error = font50.render("THIS ID ALREADY EXIST", True, BLACK)
         DB_error = font50.render("DATABASE ERROR", True, BLACK)
+        text_id2_error = font50.render("PLEASE FILL IN THE ID BOX", True, BLACK)
+        text_pass2_error = font50.render("PLEASE FILL IN THE PASSWORD BOX", True, BLACK)
         while join_run:
             clock.tick(60)
             window.blit(background, (0, 0))
             pygame.draw.rect(window, BLACK, join_rect)
+            back_rect = pygame.Rect(21, 11, 140, 50)
+            pygame.draw.rect(window, BLACK, back_rect, 2)  # back 박스를 띄움
+            back_text = font50.render("BACK", True, BLACK)
+            window.blit(back_text, [42, 20])
             event_list = pygame.event.get()     # 마우스 클릭을 했더나 키보드를 누른다거나 하는 것들
             for box in input_boxes:
                 box.handle_event(event_list)
@@ -322,20 +364,32 @@ while run:
             for event in event_list:
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     if join_rect.collidepoint(event.pos):
-                        id = input_box3.text
-                        passWord = input_box4.text
-                        if not game_DB.id_check(id):
-                            print("good!")
-                            join_id_checked = True
-                            game_DB.join_id_check(id, passWord)
-                            join_run = False
-                        elif game_DB.id_check(id):
-                            join_id_checked = False
-                            window.blit(text_id_error, [155, 40])
-                        else:
+                        # id = input_box3.text
+                        # passWord = input_box4.text
+                        # if id == NULL or " ":
+                        #     window.blit(text_id2_error, [42, 20])
+                        #     id = ""
+                        # elif passWord == NULL or " ":
+                        #     window.blit(text_pass2_error, [42, 20])
+                        #     passWord = ""
+                        # else:
+                            id = input_box3.text
+                            passWord = input_box4.text
+                            if not game_DB.id_check(id):
+                                print("good!")
+                                join_id_checked = True
+                                game_DB.join_id_check(id, passWord)
+                                join_run = False
+                            elif game_DB.id_check(id):
+                                join_id_checked = False
+                                window.blit(text_id_error, [155, 40])
+                            else:
                                 window.blit(DB_error, [155, 40])
-                        login_run = True
-                        print(input_box3.text)
+                            login_run = True
+                            print(input_box3.text)
+                    elif back_rect.collidepoint(event.pos):
+                        join_run = False
+                        intro_run = True
                 for box in input_boxes:
                     box.update
                 if event.type == pygame.QUIT:   # 위쪽 상단에 x 버튼 나가면 종료
@@ -383,6 +437,17 @@ while run:
                 question_surf = font100.render(questions[current_question], True, (255, 255, 255))  # question text
                 window.blit(question_surf, (20, 150))
                 group_text.draw(window)     # 답을 적을 공간을 그림
+                ######################################
+                #   Timer
+                ######################################
+                total_time = 10
+                elapsed_time = (pygame.time.get_ticks() - start_ticks) / 1000
+                timer = font50.render("TIMER : " + str(int(total_time - elapsed_time)), True, WHITE)
+                window.blit(timer, (280, 20))
+                if total_time - elapsed_time <= 0:
+                    lives -= 1
+                    start_ticks = pygame.time.get_ticks()
+                ######################################
                 if boss_display == True:
                     window.blit(boss, (boss_pos_x, boss_pos_y))     # boss 이미지를 창에 띄움
                 else:                           # 보스가 죽으면
@@ -395,6 +460,7 @@ while run:
                         
                 pygame.draw.rect(window, (255, 0, 0), [500, 400, Hp_pos_x, 20])     # Hp 바 그리기
                 if attack_active == True:   # 문제를 맞췄다면
+                    start_ticks = pygame.time.get_ticks()
                     window.blit(char_attack, (attack_pos_x, attack_pos_y))  # 공격 이미지를 그림
                     attack_pos_x += attack_speed    # 공격의 x 좌표에 스피드 값만큼을 추가함
                     if attack_pos_x >= 500:     # boss 이미지의 x 좌표에 도달했다면
@@ -427,11 +493,24 @@ while run:
                 if score_record == False:
                     game_DB.insert_point(login_id, score)
                     score_record = True
+                sum1 = 0
+                for x in game_DB.get_point(login_id):
+                    sum = x
+                    sum1 += sum
+                game_DB.insert_total(sum1, login_id)
                 window.fill(0)  # 화면 초기화(BLACK)
                 game_over_display = True
                 if game_over_display == True:
                     game_over_surf = font100.render("Game Over", True, (255, 255, 255)) 
                     window.blit(game_over_surf, game_over_surf.get_rect(centerx = 360, centery = 200))  # Game Over text를 띄움
+                    record_rect = pygame.Rect(500, 65, 140, 50)
+                    pygame.draw.rect(window, BLACK, record_rect)
+                    text_record = font50.render("RECORD", True, WHITE)
+                    window.blit(text_record, [517, 65])
+                    rank_rect = pygame.Rect(35, 65, 140, 50)
+                    pygame.draw.rect(window, BLACK, rank_rect)
+                    rank_record = font50.render("RANKING", True, WHITE)
+                    window.blit(rank_record, [52, 65])
                     restart_rect = pygame.Rect(140, 460, 140, 50)
                     pygame.draw.rect(window, BLACK, restart_rect)   # restart 박스를 띄움
                     text_restart = font50.render("RESTART", True, WHITE)
@@ -451,6 +530,20 @@ while run:
                                 score_record = False
                                 game_DB.get_point(login_id)
                                 text_input_box.request()
+                            elif record_rect.collidepoint(event.pos):
+                                game_over_display = False
+                                game_run = False  # 게임 동작 여부
+                                login_run = False
+                                join_run = False
+                                intro_run = False
+                                score_display = True
+                            elif rank_rect.collidepoint(event.pos):
+                                game_over_display = False
+                                game_run = False
+                                login_run = False
+                                join_run = False
+                                intro_run = False
+                                rank_display = True
                             elif quit_rect.collidepoint(event.pos):
                                 game_run = False  # 게임 동작 여부
                                 login_run = False
@@ -458,8 +551,109 @@ while run:
                                 intro_run = False
                                 run = False
 
-
             pygame.display.flip()   # 화면을 계속 업데이트 함
+    if rank_display == True:
+        window.fill(0)
+        back_rect = pygame.Rect(20, 60, 140, 50)
+        pygame.draw.rect(window, BLACK, back_rect)  # quit 박스를 띄움
+        back_quit = font50.render("BACK", True, WHITE)
+        window.blit(back_quit, [37, 60])
+        rank_rect = pygame.Rect(270, 60, 140, 50)
+        pygame.draw.rect(window, BLACK, rank_rect)  # quit 박스를 띄움
+        text_rank = font50.render("RANKING", True, WHITE)
+        window.blit(text_rank, [287, 60])
+        rankBox_rect = pygame.Rect(110, 120, 500, 500)
+        pygame.draw.rect(window, WHITE, rankBox_rect)
+        point = game_DB.get_total()
+        points = []
+        name = []
+        for i in point:
+            points += list(i)
+            name += list(game_DB.get_name(i))
+        j = 140     # rankBox_rect의 x좌표 + 30
+        k = 150     # rankBox_rect의 y좌표 + 30
+        y = 0       # id 넘버
+        points.sort(reverse=True)
+        name.reverse()
+        for x in range(len(name)):
+            text_num = font50.render(""+str(x+1), True, BLACK)
+            window.blit(text_num, [j, k])
+            text_name = font50.render(""+str(game_DB.get_name(points[y])[0]), True, BLACK)
+            window.blit(text_name, [j+70, k])
+            text_total = font50.render(""+str(points[y]), True, BLACK)
+            window.blit(text_total, [j+420, k])
+            y += 1
+            k += 50
+        event_list = pygame.event.get()     # 마우스 클릭을 했더나 키보드를 누른다거나 하는 것들
+        for event in event_list:
+            if event.type == pygame.QUIT:   # 위쪽 상단에 x 버튼 나가면 종료
+                login_run = False
+                intro_run = False
+                game_run = False
+                score_display = False
+                rank_display = False
+                run = False
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if back_rect.collidepoint(event.pos):
+                    rank_display = False
+                    game_run = True
+                    game_over_display = True
+        pygame.display.flip()
+    if score_display == True:
+        window.fill(0)
+        quit_rect = pygame.Rect(470, 60, 140, 50)
+        pygame.draw.rect(window, BLACK, quit_rect)  # quit 박스를 띄움
+        text_quit = font50.render("QUIT", True, WHITE)
+        window.blit(text_quit, [487, 60])
+        back_rect = pygame.Rect(120, 60, 140, 50)
+        pygame.draw.rect(window, BLACK, back_rect)  # back 박스를 띄움
+        back_text = font50.render("BACK", True, WHITE)
+        window.blit(back_text, [137, 60])
+        event_list = pygame.event.get()     # 마우스 클릭을 했더나 키보드를 누른다거나 하는 것들
+        for event in event_list:
+            if event.type == pygame.QUIT:   # 위쪽 상단에 x 버튼 나가면 종료
+                login_run = False
+                intro_run = False
+                game_run = False
+                score_display = False
+                run = False
+                print(nn_range, game_DB.get_point(login_id))
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if quit_rect.collidepoint(event.pos):
+                    game_run = False  # 게임 동작 여부
+                    login_run = False
+                    join_run = False
+                    intro_run = False
+                    score_display = False
+                    run = False
+                if back_rect.collidepoint(event.pos):
+                    score_display = False
+                    game_run = True
+                    game_over_display = True
+        n = len(game_DB.get_point(login_id))
+        nn_range = [0 for i in range(n)]
+        x = 0
+        for x in range(n):
+            nn_range[x] = x + 1
+        fig = plt.figure(figsize=[4, 4], # Inches
+                dpi=100,        # 100 dots per inch, so the resulting buffer is 400x400 pixels
+                )
+        ax = fig.gca()
+        ax.plot(nn_range, game_DB.get_point(login_id), marker="o")
+        ax.set_title(login_id + "'s Score")
+        ax.set_ylabel('Score')
+        ax.set_xlabel('Number Of Times')
+        canvas = agg.FigureCanvasAgg(fig)
+        canvas.draw()
+        renderer = canvas.get_renderer()
+        raw_data = renderer.tostring_rgb()
+        screen = pygame.display.get_surface()
+        size = canvas.get_width_height()
+        # game_DB.get_point(login_id)
+        surf = pygame.image.fromstring(raw_data, size, "RGB")
+        screen.blit(surf, [150, 150])
+        pygame.display.flip()
+        plt.close()
 game_DB.con().close
 pygame.quit()   # Main Loop를 벗어나면 종료
 
