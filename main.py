@@ -469,13 +469,17 @@ while run:
                 if not text_input_box.active:   # 엔터를 눌렀을 때
                     if text_input_box.text == answer[current_question]: # 답이 정답과 같다면
                         attack_active = True    # 공격 이미지 활성화
-                        if int(text_input_box.text) >= 100: # 답이 100 이상이고
-                            if score <= 1:      # score가 1보다 작거나 같을 때는
+                        if int(text_input_box.text) >= 200: # 답이 200 이상이고
+                            if score <= 5:      # score가 5보다 작거나 같을 때는
                                 Hp_pos_x -= abs(int(text_input_box.text))   # 답만큼 hp바가 깎이고
-                            else:   # score가 1보다 크면
+                            else:   # score가 5보다 크면
                                 Hp_pos_x -= abs(int(text_input_box.text) / (score / 2)) # score의 절반만큼 답을 나눈 값으로 hp바를 깎음
-                        else:   # 답이 100보다 작을 시
-                            Hp_pos_x -= abs(int(text_input_box.text))   
+                        elif int(text_input_box.text) <= 50:   # 답이 50보다 작을 시
+                            Hp_pos_x -= abs(int(text_input_box.text) * 2)   # 답의 2배만큼 hp바가 깎임
+                        elif int(text_input_box.text) <= 30:   # 답이 30보다 작을 시
+                            Hp_pos_x -= abs(int(text_input_box.text) * 3)   # 답의 3배만큼 hp바가 깎임
+                        else:
+                            Hp_pos_x -= abs(int(text_input_box.text))   # 답이 51~ 199사이라면 hp바가 그대로 깎임
                         if Hp_pos_x <= 0:   # hp바가 다 깎였을 시 
                             boss_display = False    # 보스 이미지를 지움
                             Hp_pos_x = 200  # hp바 초기화
@@ -552,6 +556,9 @@ while run:
                                 run = False
 
             pygame.display.flip()   # 화면을 계속 업데이트 함
+    #########################################
+    #   랭킹 보여주기
+    #########################################
     if rank_display == True:
         window.fill(0)
         back_rect = pygame.Rect(20, 60, 140, 50)
@@ -599,6 +606,9 @@ while run:
                     game_run = True
                     game_over_display = True
         pygame.display.flip()
+    ##########################################
+    #   점수로 차트 그리기
+    ##########################################
     if score_display == True:
         window.fill(0)
         quit_rect = pygame.Rect(470, 60, 140, 50)

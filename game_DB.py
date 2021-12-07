@@ -120,6 +120,6 @@ for i in point:
     points += list(i)
     name += list(get_name(i))
 
-print(get_name(35)[0])
-print(points)
-print(name)
+# print(get_name(35)[0])
+# print(points)
+# print(name)
